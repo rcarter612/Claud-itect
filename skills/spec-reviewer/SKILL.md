@@ -130,6 +130,26 @@ The **Additional** column reflects the broadest possible reach of programs that 
 
 Scan the `2.0 Specs/` folder. Build a table of contents from the .docx files present. Compare against the existing ToC spec section (typically Section 00 0110 or similar).
 
+#### ToC Parsing Rules
+
+When reading an existing ToC document, distinguish between **Division headers** and **Sections**:
+
+- **Division headers** are formatted as: `DIVISION 1 - GENERAL REQUIREMENTS`, `DIVISION 2 - EXISTING CONDITIONS`, etc. These are organizational groupings, NOT sections. Do NOT count Division headers as sections.
+- **Sections** are the indented entries under Division headers. Sections are formatted with a CSI MasterFormat number followed by a title, using one of these patterns:
+  - `02 4100    DEMOLITION` (space-separated groups, variable whitespace before title)
+  - `04 2000    UNIT MASONRY`
+  - `02 41 00    DEMOLITION` (three space-separated pairs)
+  - `04 20 00    UNIT MASONRY`
+- Sections are visually indented from the left margin relative to their Division header.
+- The section count reported in the review must count **sections only**, not Division headers.
+
+When comparing the ToC against the `2.0 Specs/` folder:
+
+- Parse every section entry from the ToC document using the patterns above.
+- Parse every .docx filename in `2.0 Specs/` to extract the CSI section number.
+- The reported "sections in ToC" count must match the number of section-level entries parsed, not the number of Division headers.
+- If the ToC appears to list only Division headers without section entries underneath, flag this as a critical deviation: "ToC contains only Division headers without section entries."
+
 - If a ToC section exists: edit it (tracked changes on the `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/specs/` copy) to match the actual sections present in the spec book.
 - If no ToC section exists: create one in `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/specs/` and flag to the user that no ToC was found in the original spec book.
 - Flag any sections referenced in the ToC that do not have a corresponding .docx file.
@@ -404,7 +424,7 @@ For every section, extract a fingerprint covering all five parts:
 4. **Installation** — Methods, sequences, substrate requirements
 5. **QA / Submittals** — Mock-up requirements, testing requirements, submittal items
 
-Store the fingerprint index in memory. This is lightweight — product names, standard numbers, and key numeric values only.
+Store the fingerprint index in memory. This is lightweight — product names, standard numbers, and key numeric values only. **The fingerprint index must preserve full paragraph references** (e.g., "§2.01.D.5.a") for every indexed item, not just the article number (e.g., "§2.01"). Downstream consumers — the HTML report, the change manifest, and the Document Agent — all depend on these granular references to place findings and comments at the correct location. Truncating paragraph references in the fingerprint index propagates location errors to every output.
 
 ### Step 2 — Compare Fingerprints
 
@@ -604,7 +624,7 @@ For each section in the change manifest:
    )
    ```
 4. For each change in the manifest:
-   a. **Locate** — Walk `doc.paragraphs`, concatenate run texts, and find the paragraph + run span containing `old_text`.
+   a. **Locate** — Use the `paragraph` field from the manifest to navigate to the correct paragraph in the .docx first (matching by CSI paragraph numbering structure — e.g., article "2.01", sub-paragraph "D", item "5", sub-item "a"). Then within that paragraph, concatenate run texts and find the run span containing `old_text`. Do NOT search globally for `old_text` — always scope the search to the paragraph identified by the reference to avoid anchoring changes to the wrong paragraph (e.g., a section heading instead of the specific content paragraph).
    b. **Split runs at match boundaries** — If the match starts or ends mid-run, split that run into two sibling `w:r` elements so the matched text is isolated in its own contiguous runs.
    c. **Wrap matched runs in `w:del`** — Create a `w:del` element with `w:id`, `w:author="Spec Coordination Agent"`, and `w:date` (ISO 8601). Move the matched `w:r` elements inside it, converting each `w:t` to `w:delText` (preserving `xml:space="preserve"`). Insert `w:del` at the position of the first matched run.
    d. **Insert `w:ins` immediately after `w:del`** — Create a `w:ins` element with the same attributes. Inside it, create a new `w:r` containing a `w:t` with `new_text`. Copy `w:rPr` (run formatting) from the first deleted run so the replacement inherits the original formatting.
@@ -614,12 +634,22 @@ For each section in the change manifest:
       doc.add_comment(ins_runs, text=comment_text, author='Spec Coordination Agent')
       ```
 5. For each VERIFY flag in the manifest:
-   a. Locate the target paragraph by matching its text content.
-   b. Insert a Word comment (no text change) anchored to the paragraph's runs:
+   a. **Locate by paragraph reference, not section heading.** Use the `paragraph` field from the finding (e.g., "§2.01.D.5.a") to identify the specific paragraph in the .docx:
+      - Parse the paragraph reference into its components (article, sub-paragraph, sub-sub-paragraph).
+      - Walk `doc.paragraphs` and match by the CSI paragraph numbering structure visible in the paragraph text (e.g., a paragraph starting with "D." under an article headed "2.01" that contains sub-item "5." with sub-sub-item "a.").
+      - Do NOT anchor the comment to the section heading or article heading. Anchor it to the specific content paragraph identified by the reference.
+      - If the exact sub-paragraph cannot be found, anchor to the nearest parent paragraph (e.g., "D." if "D.5.a" is not separately identifiable) and prepend to the comment text: `"[Anchored to parent §{parent_ref} — target §{full_ref} not separately identifiable in document structure.]\n"`.
+   b. Insert a Word comment (no text change) anchored to the matched paragraph's runs:
       ```python
       doc.add_comment(paragraph.runs, text=verify_comment, author='Spec Coordination Agent')
       ```
-6. Save the document: `doc.save(output_path)`.
+6. **Preserve native Word footers.** The output .docx must retain the original footer structure from the input .docx as native Word footers — not images.
+   - When copying the .docx from `2.0 Specs/` to the output location, the `python-docx` `Document` object preserves section objects and their footers by default. Do NOT re-create footers from scratch or render them as images/screenshots.
+   - After opening the copy with `Document(path)`, verify that `doc.sections` retains the footer references from the original. Access footers via `section.footer` for each section in `doc.sections`.
+   - If footer content needs to be read or verified: `section.footer.paragraphs` contains the footer text and `section.footer.paragraphs[n].runs` contains individual runs with formatting.
+   - Do NOT use PIL, screenshot utilities, or any image-rendering approach for footers. Footers must remain as `w:ftr` XML elements in the document package, never as `w:drawing` or `w:pict` image references.
+   - If the original .docx has different first-page or odd/even footers (`section.different_first_page_header_footer` or distinct `w:ftrReference` types), preserve all variants.
+7. Save the document: `doc.save(output_path)`.
 
 #### Revision ID Management
 
@@ -713,11 +743,15 @@ When Additional Requirements has deviations, list them per program as sub-bullet
 | 1 | §1.03.C | Standards Update | ASTM C920 updated 2018 → 2024 | Internal |
 | 2 | §1.07.B | Requirement | Warranty 2yr → 5yr (Client governs) | QAP, Client |
 
+Paragraph references must be the full path from the JSON findings `paragraph` field (e.g., §2.01.D.5.a, not §2.01). Never truncate sub-paragraph designations.
+
 ### Designer Action Required (VERIFY)
 
 | # | Paragraph | Issue | Action |
 |---|---|---|---|
 | 1 | §2.04.A / §2.05.B | Duplicate sealant specs for same application | Confirm intended sealant type |
+
+Paragraph references must be the full path from the JSON findings `paragraph` field. If multiple paragraphs are affected, list each one explicitly.
 
 ---
 
@@ -751,11 +785,11 @@ Save as `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/coordination
 
 All filter buttons start active. Toggling a button hides/shows every `.section-block[data-sources][data-statuses]` row whose `data-sources` and `data-statuses` attributes intersect the active sets. Filtering applies across Critical Issues, Cross-Section Issues, and Section-by-Section Findings simultaneously. Show a "No findings match the current filters" message in the section findings area when no section rows are visible.
 
-**Critical Project-Wide Issues** — Collapsible card with red-tinted header. One `div.critical-issue.section-block` per issue, each with `data-sources` and `data-statuses` attributes (space-separated for multi-source items). Each issue has: badge row (status + source badges), title, body content (sources, narrative, lists), and an action block. `div.deviation-block` styling for DEVIATION issues; default action block for VERIFY.
+**Critical Project-Wide Issues** — Collapsible card with red-tinted header. One `div.critical-issue.section-block` per issue, each with `data-sources` and `data-statuses` attributes (space-separated for multi-source items). Each issue has: badge row (status + source badges), title, body content (sources, narrative, lists), and an action block. `div.deviation-block` styling for DEVIATION issues; default action block for VERIFY. Every critical issue must include specific paragraph references from the JSON findings — e.g., "§2.01.D.5.a and §2.01.D.5.b contain unresolved bracket placeholders", not just "Section 05 1200 has unresolved brackets".
 
 **Cross-Section Coordination Issues** — Collapsible card with purple-tinted header. One `div.cs-issue.section-block` per issue, each with `data-sources` and `data-statuses`. Same badge + action block pattern.
 
-**Section-by-Section Findings** — Collapsible outer card. Inside, one nested collapsible card per spec section (id=`sec-{number-no-spaces}`). Each section card contains a `<table class="finding-table">` with columns: Source | Status | Finding. Each `<tr>` is a `.section-block` with `data-sources` and `data-statuses`. Action blocks go below the table when the section has a single governing action.
+**Section-by-Section Findings** — Collapsible outer card. Inside, one nested collapsible card per spec section (id=`sec-{number-no-spaces}`). Each section card contains a `<table class="finding-table">` with columns: Source | Paragraph | Status | Finding. The **Paragraph** column displays the full paragraph reference from the JSON findings `paragraph` field — e.g., "§2.01.D.5.a", "§3.04", "§1.03.C". Never truncate paragraph references. If a finding affects multiple paragraphs, list each one explicitly (e.g., "§2.04.A / §2.05.B"). If the JSON `paragraph` field is "General" or "entire section", display that literal text. Each `<tr>` is a `.section-block` with `data-sources` and `data-statuses`. Action blocks go below the table when the section has a single governing action.
 
 **Missing Specification Sections** — Collapsible card. Table with columns: Missing Section | Reason Required. Each missing section shown as a neutral badge + section title.
 
