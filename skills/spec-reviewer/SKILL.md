@@ -132,28 +132,42 @@ Scan the `2.0 Specs/` folder. Build a table of contents from the .docx files pre
 
 #### ToC Parsing Rules
 
-When reading an existing ToC document, distinguish between **Division headers** and **Sections**:
+ToC documents use two formatting patterns that coexist in the same file. You must handle both by parsing the `.docx` XML structure (`word/document.xml`), not by treating the document as flat text.
 
-- **Division headers** are formatted as: `DIVISION 1 - GENERAL REQUIREMENTS`, `DIVISION 2 - EXISTING CONDITIONS`, etc. These are organizational groupings, NOT sections. Do NOT count Division headers as sections.
-- **Sections** are the indented entries under Division headers. Sections are formatted with a CSI MasterFormat number followed by a title, using one of these patterns:
-  - `02 4100    DEMOLITION` (space-separated groups, variable whitespace before title)
-  - `04 2000    UNIT MASONRY`
-  - `02 41 00    DEMOLITION` (three space-separated pairs)
-  - `04 20 00    UNIT MASONRY`
-- Sections are visually indented from the left margin relative to their Division header.
-- The section count reported in the review must count **sections only**, not Division headers.
+**Walk `<w:body>` children in document order. For each child element:**
+
+1. **`<w:tbl>` (Word table)** — the primary format for most entries. Each `<w:tr>` row with 2+ cells is a section entry:
+   - `<w:tc>[0]` = CSI number (e.g., `07 2100`)
+   - `<w:tc>[1]` = section title (e.g., `THERMAL INSULATION`)
+   - Word stores each word in a separate text run, producing extra spaces when concatenated (e.g., `SUBSTITUTION   PROCEDURES`). **Normalize** by collapsing multiple whitespace to a single space: `re.sub(r'\s+', ' ', text).strip()`.
+
+2. **`<w:p>` (paragraph)** — used for Division headers, a minority of section entries, and non-section content. Classify by text content:
+   - **Division header:** matches `DIVISION \d+ - ...` (e.g., `DIVISION 7 - THERMAL AND MOISTURE PROTECTION`). These are organizational groupings only. Do NOT count Division headers as sections.
+   - **Section entry (tab-separated):** CSI number + tab + title on one paragraph (e.g., `02 4100\tDEMOLITION`). Extract by splitting on the tab character.
+   - **Section entry (space-separated, no table):** CSI number + variable whitespace + title on one paragraph (e.g., `02 4100    DEMOLITION` or `02 41 00    DEMOLITION`). Match with pattern: `^\s*(\d{2})\s+(\d{2}\s*\d{2}|\d{4})\s+([A-Z].+)$`.
+   - **Non-section content:** Document title (`SECTION 00 0110 TABLE OF CONTENTS`), group headers (`INTRODUCTORY INFORMATION...`), sub-items under a section (`GEOTECHNICAL REPORT...`), `END OF SECTION`, `PART 1 GENERAL`, etc. Skip these.
+
+3. **Stop parsing** when you encounter `END OF SECTION` or `PART 1 GENERAL`. Anything after these markers is document body content, not ToC entries.
+
+**Section count:** The reported "sections in ToC" count must include entries from both tables and paragraphs, but must NOT include Division headers or non-section content.
+
+**Duplicate detection:** If two entries share the same CSI number (e.g., `26 0533` appearing as both "CONDUIT FOR ELECTRICAL SYSTEMS" and "BOXES FOR ELECTRICAL SYSTEMS"), flag this as a data issue: "Duplicate CSI number XX XXXX in ToC — verify correct numbering."
+
+If the ToC appears to list only Division headers without section entries underneath, flag this as a critical deviation: "ToC contains only Division headers without section entries."
+
+#### ToC Comparison Rules
 
 When comparing the ToC against the `2.0 Specs/` folder:
 
-- Parse every section entry from the ToC document using the patterns above.
+- Parse every section entry from the ToC document using the extraction rules above.
 - Parse every .docx filename in `2.0 Specs/` to extract the CSI section number.
+- Normalize CSI numbers to a canonical form (`DD DDDD`) before comparison — collapse `DD DD DD` to `DD DDDD` by removing the inner space.
 - The reported "sections in ToC" count must match the number of section-level entries parsed, not the number of Division headers.
-- If the ToC appears to list only Division headers without section entries underneath, flag this as a critical deviation: "ToC contains only Division headers without section entries."
 
 - If a ToC section exists: edit it (tracked changes on the `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/specs/` copy) to match the actual sections present in the spec book.
 - If no ToC section exists: create one in `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/specs/` and flag to the user that no ToC was found in the original spec book.
-- Flag any sections referenced in the ToC that do not have a corresponding .docx file.
-- Flag any .docx files in `2.0 Specs/` that are not listed in the ToC.
+- Flag any sections referenced in the ToC that do not have a corresponding .docx file ("orphan ToC entry").
+- Flag any .docx files in `2.0 Specs/` that are not listed in the ToC ("missing from ToC").
 
 ---
 

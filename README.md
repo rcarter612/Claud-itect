@@ -23,7 +23,7 @@ A multi-agent specification coordination review system. It reads a full CSI Mast
 
 **Workflow:**
 
-1. **Setup** -- Select reviewers, confirm section-to-reviewer mapping, build table of contents
+1. **Setup** -- Select reviewers, confirm section-to-reviewer mapping, parse table of contents (XML-aware: handles both Word tables and plain-text entries)
 2. **Internal Consistency** -- Parallel agents review sections for logic errors and outdated standards
 3. **Requirement Agents** -- Parallel agents check each section against QAP, geotech, client, BABA, and additional program requirements
 4. **Cross-Section Coordination** -- Fingerprint index built across all sections; conflicts and duplicates identified
@@ -36,7 +36,7 @@ A multi-agent specification coordination review system. It reads a full CSI Mast
 |---|---|
 | `specs/` | Copies of `.docx` files with tracked changes and Word comments -- designer accepts/rejects in Word |
 | `coordination-report.md` | Full findings report organized by section with compliance status tables |
-| `coordination-report.html` | Interactive HTML dashboard with filtering, charts (Chart.js), and color-coded badges |
+| `coordination-report.html` | Interactive HTML dashboard with filtering, pure-CSS stacked bar charts, localStorage-persisted correction tracking, and TSV export/import |
 | `speclink-reentry-guide.md` | Step-by-step guide for re-entering accepted changes into BSD SpecLink Cloud |
 | `review-log.csv` | Per-section review log with dates, reviewer list, change counts, and file hashes |
 | `findings/` | Intermediate JSON findings from each agent (used by the coordination phase) |
