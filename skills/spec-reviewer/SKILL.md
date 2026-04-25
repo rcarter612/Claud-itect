@@ -760,99 +760,46 @@ Paragraph references must be the full path from the JSON findings `paragraph` fi
 
 ### Step 3 — Generate HTML Coordination Report
 
-Save as `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/coordination-report.html`. This is a self-contained, interactive HTML file covering the same content as the markdown report. It uses Chart.js from CDN and requires no server — open directly in a browser.
+Save as `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/coordination-report.html`. Read the template at `~/.claude/skills/spec-reviewer/templates/coordination-report-template.html` and populate it with findings data. The template is a self-contained, interactive HTML file with no external JS dependencies (pure CSS bar charts, no Chart.js). It includes dark mode, per-finding correction tracking with localStorage persistence, TSV import/export, and print support.
 
-#### Page Structure
+**Do not modify the template's CSS, JavaScript, or structural HTML.** Copy it verbatim and replace only the placeholder sections and `{{MUSTACHE}}` tokens with project data.
 
-**Header** — Dark background card. Project name as `<h1>`. Meta row with: project number, address, date, reviewers active, sections reviewed count.
+#### Placeholder Substitution
 
-**Summary Metrics** — Collapsible card. Grid of metric boxes (auto-fill columns, min 150px). Each box shows a large count and a label. Color-code boxes by type:
-- `dev` (red) → Deviations
-- `ver` (amber) → Verify flags
-- `com` (green) → Compliant
-- `baba` (purple) → BABA issues
-- `geo` (brown/amber) → Geotech deviations
-- `cs` (pink) → Cross-section issues
-- Neutral for totals (sections reviewed, total findings, etc.)
+| Placeholder | Source |
+|---|---|
+| `{{PROJECT_NUMBER}}` | Project number from folder name |
+| `{{PROJECT_NAME}}` | Project name from folder name |
+| `{{PROJECT_ADDRESS}}` | Project address (from drawings or user input) |
+| `{{REPORT_DATE}}` | Current date, formatted as "Month DD, YYYY" |
+| `{{REVIEWERS}}` | Comma-separated list of active reviewers |
+| `{{SECTIONS_LIST}}` | Comma-separated list of reviewed section numbers |
+| `{{TOTAL_FINDINGS}}` | Count of all non-COMPLIANT findings |
+| `{{DEVIATION_COUNT}}` | Count of DEVIATION findings |
+| `{{VERIFY_COUNT}}` | Count of VERIFY findings |
+| `{{BABA_COUNT}}`, `{{GEOTECH_COUNT}}`, `{{QAP_COUNT}}` | Per-source finding counts |
 
-**Issue Distribution Chart** — Collapsible card. Bar chart via `Chart.js@4.4.0` (CDN). Toggle buttons switch between "Status" view (Deviation / Verify / Compliant / Other) and "Source Category" view (BABA / Internal Consistency / QAP / Geotech / Cross-Section). Chart colors must match badge colors used throughout the page.
+**Bento tiles:** Include one tile per source that has findings. Omit tiles for sources with zero findings.
 
-**Filter Bar** — Persistent (not collapsible). Two filter groups:
-- Status: DEVIATION / VERIFY / COMPLIANT toggle buttons
-- Source: Internal / QAP / BABA / Geotech / CrossSection toggle buttons
-- Reset All button
-- Live count showing "Showing X of Y findings"
+#### Repeating Sections
 
-All filter buttons start active. Toggling a button hides/shows every `.section-block[data-sources][data-statuses]` row whose `data-sources` and `data-statuses` attributes intersect the active sets. Filtering applies across Critical Issues, Cross-Section Issues, and Section-by-Section Findings simultaneously. Show a "No findings match the current filters" message in the section findings area when no section rows are visible.
+Replace the HTML comment blocks (`{{CHART_ROWS}}`, `{{CRITICAL_ISSUES}}`, `{{SECTION_FINDINGS}}`) with generated content following the example patterns in the template comments:
 
-**Critical Project-Wide Issues** — Collapsible card with red-tinted header. One `div.critical-issue.section-block` per issue, each with `data-sources` and `data-statuses` attributes (space-separated for multi-source items). Each issue has: badge row (status + source badges), title, body content (sources, narrative, lists), and an action block. `div.deviation-block` styling for DEVIATION issues; default action block for VERIFY. Every critical issue must include specific paragraph references from the JSON findings — e.g., "§2.01.D.5.a and §2.01.D.5.b contain unresolved bracket placeholders", not just "Section 05 1200 has unresolved brackets".
+**Chart rows** — One `div.chart-row` per spec section. `bar-fill` width = `(section_total / max_section_total * 100)%`. `seg-dev` width = `(deviation_count / section_total * 100)%`. `seg-ver` width = `(verify_count / section_total * 100)%`.
 
-**Cross-Section Coordination Issues** — Collapsible card with purple-tinted header. One `div.cs-issue.section-block` per issue, each with `data-sources` and `data-statuses`. Same badge + action block pattern.
+**Critical issues** — One `div.crit-card` per critical finding. Must include specific paragraph references (e.g., "§2.01.D.5.a and §2.01.D.5.b"), not vague section-level descriptions.
 
-**Section-by-Section Findings** — Collapsible outer card. Inside, one nested collapsible card per spec section (id=`sec-{number-no-spaces}`). Each section card contains a `<table class="finding-table">` with columns: Source | Paragraph | Status | Finding. The **Paragraph** column displays the full paragraph reference from the JSON findings `paragraph` field — e.g., "§2.01.D.5.a", "§3.04", "§1.03.C". Never truncate paragraph references. If a finding affects multiple paragraphs, list each one explicitly (e.g., "§2.04.A / §2.05.B"). If the JSON `paragraph` field is "General" or "entire section", display that literal text. Each `<tr>` is a `.section-block` with `data-sources` and `data-statuses`. Action blocks go below the table when the section has a single governing action.
+**Section findings** — One `<details class="spec-acc">` per spec section. The first section gets the `open` attribute; the rest are collapsed. Each finding is a `<tr>` with:
+- `data-sources` attribute: source name (e.g., `"Internal"`, `"QAP"`)
+- `data-statuses` attribute: status (e.g., `"DEVIATION"`, `"VERIFY"`)
+- `data-row-id` attribute: sequential IDs `f1`, `f2`, `f3`, ... across all sections
+- Columns: Source badge | Paragraph reference | Status badge | Finding text | Corrected toggle
 
-**Missing Specification Sections** — Collapsible card. Table with columns: Missing Section | Reason Required. Each missing section shown as a neutral badge + section title.
+**Filter bar** — Only include `filter-btn` buttons for sources that actually appear in the findings data. Update the `activeFilters.source` Set in the JavaScript to match.
 
-**Notes and Limitations** — Collapsible card. Bulleted list of review limitations (skipped sub-tasks, inactive reviewers, excluded files). Timestamp at bottom right.
+#### COMPLIANT Findings
 
-#### Behavior
-
-All cards start expanded. Clicking the card header toggles a `.collapsed` class that hides `.card-body` and rotates the chevron icon. The filter system uses `data-sources` and `data-statuses` attributes on every `.section-block` element for O(n) filtering with no DOM re-render.
-
-#### CSS Design Tokens
-
-Use these CSS custom properties:
-
-```css
-:root {
-  --c-bg: #f4f5f7;
-  --c-surface: #ffffff;
-  --c-border: #d0d5dd;
-  --c-text: #1a1f2e;
-  --c-muted: #6b7280;
-  --c-accent: #1d4ed8;
-  --c-deviation: #dc2626;
-  --c-verify: #d97706;
-  --c-compliant: #16a34a;
-  --c-baba: #7c3aed;
-  --c-qap: #0891b2;
-  --c-geotech: #b45309;
-  --c-internal: #374151;
-  --c-crosssec: #be185d;
-  --radius: 8px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.10);
-}
-```
-
-#### Badge Classes
-
-| Badge | Background | Text |
-|---|---|---|
-| `badge-DEVIATION` | `#fee2e2` | `#991b1b` |
-| `badge-VERIFY` | `#fef3c7` | `#92400e` |
-| `badge-COMPLIANT` | `#dcfce7` | `#14532d` |
-| `badge-Internal` | `#f1f5f9` | `#334155` |
-| `badge-QAP` | `#e0f2fe` | `#075985` |
-| `badge-BABA` | `#ede9fe` | `#5b21b6` |
-| `badge-Geotech` | `#fef9c3` | `#78350f` |
-| `badge-CrossSection` | `#fce7f3` | `#9d174d` |
-| `badge-Missing` | `#f3f4f6` | `#374151` |
-
-#### Chart Data
-
-Embed chart data directly in JavaScript as a `const chartData` object with `status` and `source` keys. Each key has `labels`, `data` (counts), and `colors` (hex strings matching design tokens). Build the chart with `buildChart('status')` on load. The `switchChart(type, btn)` function destroys and rebuilds the chart instance.
-
-#### `data-sources` and `data-statuses` Conventions
-
-- Attribute values are space-separated strings of the filter keys used in the JS filter sets.
-- Status keys: `DEVIATION`, `VERIFY`, `COMPLIANT`
-- Source keys: `Internal`, `QAP`, `BABA`, `Geotech`, `CrossSection`
-- Multi-source/status rows use both keys: `data-sources="QAP Internal"` `data-statuses="DEVIATION"`
-- The filter logic uses `.split(' ').some(s => activeFilters[group].has(s))` — a row is visible when at least one of its sources AND at least one of its statuses are active.
-
-#### Responsive
-
-At ≤ 640px: `.finding-table` and `.missing-table` become horizontally scrollable blocks. Filter groups stack vertically.
+Exclude COMPLIANT findings from the HTML report entirely. The report exists to surface non-compliance for correction — compliant items add noise. COMPLIANT findings may still appear in coordination-report.md and review-log.csv.
 
 ---
 
@@ -1015,6 +962,6 @@ The agent should specifically check for these frequent gaps:
 10. **Warn and skip missing requirements.** If a reviewer is selected but its requirement document is missing, warn the user and skip that reviewer. Do not error.
 11. **Placeholder and empty-folder reviewers return cleanly.** The Building Code Agent returns "not yet implemented" without failing the review. The Additional Requirements Agent warns and skips when `3.0 References/H. Other/` is empty or contains no identifiable program documents.
 12. **Conditional requirements use site context.** Look up the project address and use web search for site conditions (arterial roads, flood zones, noise zones) when requirements are location-dependent. If conditions cannot be determined, use VERIFY.
-13. **Produce all four outputs every time:** marked-up .docx copies, coordination-report.md, coordination-report.html, and SpecLink re-entry guide. The HTML report is generated from the same findings data as the markdown report — not a post-processing step.
+13. **Produce all four outputs every time:** marked-up .docx copies, coordination-report.md, coordination-report.html, and SpecLink re-entry guide. The HTML report is populated from the template at `~/.claude/skills/spec-reviewer/templates/coordination-report-template.html` using the same findings data as the markdown report. Exclude COMPLIANT findings from the HTML report.
 14. **Token efficiency.** Requirement agents produce lightweight JSON findings — they do not edit documents. The Coordination Agent sees only findings JSONs, not full documents. The Document Agent sees only the change manifest, not requirement documents.
 15. **Scale to project size.** For small projects (under 20 sections), 3–5 Internal Consistency Agents. For large projects (50+ sections), scale to 15–20 agents, each handling 3–5 sections. The orchestrator manages fan-out based on section count and page length.

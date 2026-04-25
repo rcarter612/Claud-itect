@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Coordination Report — {{PROJECT_NUMBER}} {{PROJECT_NAME}}</title>
+<meta name="color-scheme" content="light dark">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<style>
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+</style>
+<style>
+/* ================= THEME TOKENS ================= */
+:root {
+  --brand: #e0393d;
+  --brand-soft: rgba(224,57,61,0.10);
+  --brand-ink: #8a1619;
+  --verify: #c27803;
+  --verify-soft: rgba(194,120,3,0.12);
+  --verify-ink: #7a4a00;
+
+  --bg: #f7fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f4f6;
+  --border: #c7cacc;
+  --border-soft: #e0e3e5;
+  --text: #181c1e;
+  --text-2: #534343;
+  --muted: #6b7580;
+
+  --src-internal-soft: #eceef1;  --src-internal-ink: #2f3742;
+  --src-qap-soft: #d6f1ee;       --src-qap-ink: #0a4e49;
+  --src-baba-soft: #ece3fb;      --src-baba-ink: #4a1aa0;
+  --src-geotech-soft: #f4e6d4;   --src-geotech-ink: #5e3815;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #ff5a5f;
+    --brand-soft: rgba(255,90,95,0.14);
+    --brand-ink: #ffb4b6;
+    --verify: #f5b042;
+    --verify-soft: rgba(245,176,66,0.14);
+    --verify-ink: #fbd999;
+
+    --bg: #0b0f14;
+    --surface: #121821;
+    --surface-2: #182030;
+    --border: #253040;
+    --border-soft: #1c2535;
+    --text: #f2f4f7;
+    --text-2: #b7bfcb;
+    --muted: #8a93a1;
+
+    --src-internal-soft: #1e2635;  --src-internal-ink: #cdd3db;
+    --src-qap-soft: #10302d;       --src-qap-ink: #a7e9e1;
+    --src-baba-soft: #241838;      --src-baba-ink: #dccbfa;
+    --src-geotech-soft: #2f2114;   --src-geotech-ink: #f0c893;
+  }
+}
+
+/* ================= BASE ================= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  color:var(--text);line-height:1.5;font-size:16px;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+.material-symbols-outlined{
+  font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;
+  display:inline-block;line-height:1;text-transform:none;letter-spacing:normal;
+  word-wrap:normal;white-space:nowrap;direction:ltr;
+  -webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased;
+  font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:-0.15em;
+}
+
+/* ================= LAYOUT ================= */
+.shell{min-height:100vh;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:stretch}
+.topbar-inner{max-width:1280px;margin:0 auto;width:100%;padding:10px 32px;display:flex;align-items:center;gap:12px;color:var(--text);font-weight:600;letter-spacing:-0.01em;flex-wrap:wrap}
+.topbar .brand-dot{width:10px;height:10px;background:var(--brand);border-radius:2px}
+.topbar .tb-actions{display:flex;gap:6px;align-items:center;margin-left:auto}
+.topbar .tb-btn{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text);background:var(--surface);border:1px solid var(--border);padding:6px 12px;cursor:pointer;transition:background 0.15s,color 0.15s}
+.topbar .tb-btn:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+.topbar .tb-btn .material-symbols-outlined{font-size:14px}
+.topbar .tb-title{font-weight:600;letter-spacing:-0.01em}
+.topbar .tb-progress-bar{position:relative;width:100%;height:22px;background:var(--surface-2);border-top:1px solid var(--border-soft);overflow:hidden}
+.topbar .tb-progress-fill{height:100%;background:var(--brand);width:0%;transition:width 0.3s ease}
+.topbar .tb-progress-count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);letter-spacing:0.08em;text-transform:uppercase;font-variant-numeric:tabular-nums;mix-blend-mode:difference;color:#fff}
+.main{flex:1;padding:32px;max-width:1280px;margin:0 auto;width:100%}
+.main > section{margin-bottom:56px}
+h2.section-title{font-size:24px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;margin-bottom:20px;color:var(--text)}
+
+/* ================= HEADER ================= */
+.proj-header{border-bottom:1px solid var(--border);padding-bottom:40px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:24px}
+.proj-header .eyebrow{font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.proj-header h1{font-size:48px;line-height:1.05;font-weight:700;letter-spacing:-0.025em;color:var(--text);margin-bottom:8px}
+.proj-header .meta{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:16px}
+.proj-header .meta .material-symbols-outlined{font-size:18px;color:var(--muted)}
+.proj-header .right{text-align:right}
+.proj-header .right .eyebrow{margin-bottom:4px}
+.proj-header .right .date{font-size:18px;font-weight:500;color:var(--text)}
+.proj-header .right .sub{font-size:13px;color:var(--muted);margin-top:4px}
+
+/* ================= SUMMARY BENTO ================= */
+.bento{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.bento .tile{background:var(--surface);border:1px solid var(--border);padding:12px;display:flex;flex-direction:column;justify-content:space-between;min-height:92px;min-width:0}
+.bento .tile .tlabel{font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.bento .tile .tlabel .material-symbols-outlined{font-size:16px;color:var(--muted)}
+.bento .tile .tval{font-size:22px;font-weight:700;color:var(--text);line-height:1.1;margin-top:8px;font-variant-numeric:tabular-nums}
+.bento .tile.primary{background:var(--brand-soft);border-color:color-mix(in srgb, var(--brand) 45%, var(--border) 55%)}
+.bento .tile.primary .tlabel,.bento .tile.primary .tval{color:var(--brand)}
+@media(max-width:900px){.bento{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){.bento{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ================= CHART (HTML STACKED BARS) ================= */
+.chart-card{background:var(--surface);border:1px solid var(--border);padding:24px;display:flex;flex-direction:column;gap:20px}
+.chart-legend{display:flex;gap:24px;font-size:13px;color:var(--text-2)}
+.chart-legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:-1px}
+.chart-rows{display:flex;flex-direction:column;gap:14px}
+.chart-row .row-head{display:flex;justify-content:space-between;font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px}
+.chart-row .row-head .count{color:var(--muted);font-variant-numeric:tabular-nums}
+.chart-row .bar-track{width:100%;height:12px;background:var(--surface-2);overflow:hidden;border-radius:2px}
+.chart-row .bar-fill{height:100%;display:flex}
+.chart-row .bar-fill .seg-dev{background:var(--brand);height:100%}
+.chart-row .bar-fill .seg-ver{background:var(--verify);height:100%}
+
+/* ================= CRITICAL ISSUE CARDS ================= */
+.crit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media(max-width:700px){.crit-grid{grid-template-columns:1fr}}
+.crit-card{background:var(--surface);border:1px solid var(--border);padding:20px;display:flex;gap:14px;align-items:flex-start}
+.crit-card .icon{flex:0 0 28px;width:28px;height:28px;border-radius:999px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;margin-top:2px}
+.crit-card .icon .material-symbols-outlined{font-size:16px;font-variation-settings:'FILL' 1}
+.crit-card h4{font-size:17px;font-weight:700;margin-bottom:6px;color:var(--text);letter-spacing:-0.005em}
+.crit-card p{font-size:14px;color:var(--text-2);line-height:1.55}
+
+/* ================= FILTER BAR ================= */
+.filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;align-items:center;padding:12px 16px;background:var(--surface);border:1px solid var(--border)}
+.filter-bar .flabel{font-weight:600;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-right:4px}
+.filter-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:0.02em;transition:opacity 0.15s}
+.filter-btn.active{opacity:1}
+.filter-btn.inactive{opacity:0.35}
+.filter-btn.dev{background:var(--brand-soft);color:var(--brand);border-color:transparent}
+.filter-btn.ver{background:var(--verify-soft);color:var(--verify-ink);border-color:transparent}
+.filter-btn.src-internal{background:var(--src-internal-soft);color:var(--src-internal-ink);border-color:transparent}
+.filter-btn.src-qap{background:var(--src-qap-soft);color:var(--src-qap-ink);border-color:transparent}
+.filter-btn.src-baba{background:var(--src-baba-soft);color:var(--src-baba-ink);border-color:transparent}
+.filter-btn.src-geotech{background:var(--src-geotech-soft);color:var(--src-geotech-ink);border-color:transparent}
+.filter-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+
+/* ================= ACCORDION SECTIONS ================= */
+.spec-acc{background:var(--surface);border:1px solid var(--border);margin-bottom:12px}
+.spec-acc > summary{list-style:none;cursor:pointer;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:20px;font-weight:700;letter-spacing:-0.005em;color:var(--text)}
+.spec-acc > summary::-webkit-details-marker{display:none}
+.spec-acc > summary .sum-left{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.spec-acc > summary .sum-count{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}
+.spec-acc > summary .chev{transition:transform 0.2s;color:var(--muted)}
+.spec-acc[open] > summary .chev{transform:rotate(180deg)}
+.spec-acc .acc-body{padding:0 24px 24px}
+
+/* Findings table */
+table.findings{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--surface)}
+table.findings th{background:var(--surface-2);font-weight:600;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--text-2);font-size:11px;text-transform:uppercase;letter-spacing:0.06em}
+table.findings td{padding:10px 12px;border-bottom:1px solid var(--border-soft);vertical-align:top;color:var(--text)}
+table.findings tr:last-child td{border-bottom:none}
+table.findings tr.hidden-row{display:none}
+table.findings col.col-source{width:100px}
+table.findings col.col-para{width:210px}
+table.findings col.col-status{width:110px}
+table.findings col.col-corrected{width:110px}
+
+/* Corrected Yes/No toggle */
+.corr-toggle{display:inline-flex;border:1px solid var(--border);background:var(--surface);overflow:hidden;font-family:inherit}
+.corr-toggle button{font-family:inherit;font-size:11px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;padding:3px 10px;border:0;background:transparent;color:var(--muted);cursor:pointer;border-right:1px solid var(--border)}
+.corr-toggle button:last-child{border-right:0}
+.corr-toggle button.on-yes{background:var(--brand);color:#fff}
+.corr-toggle button.on-no{background:var(--surface-2);color:var(--text-2)}
+
+/* Per-section progress strip */
+.sec-progress{display:flex;align-items:center;gap:10px;min-width:160px}
+.sec-progress .sp-track{width:90px;height:6px;background:var(--surface-2);border:1px solid var(--border-soft);overflow:hidden}
+.sec-progress .sp-fill{height:100%;background:var(--brand);width:0%;transition:width 0.25s ease}
+.sec-progress .sp-count{font-size:11px;font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums;letter-spacing:0.02em;white-space:nowrap}
+
+/* Badges */
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;white-space:nowrap;letter-spacing:0.03em;text-transform:uppercase}
+.badge-DEVIATION{background:var(--brand-soft);color:var(--brand)}
+.badge-VERIFY{background:var(--verify-soft);color:var(--verify-ink)}
+.badge-Internal{background:var(--src-internal-soft);color:var(--src-internal-ink)}
+.badge-QAP{background:var(--src-qap-soft);color:var(--src-qap-ink)}
+.badge-BABA{background:var(--src-baba-soft);color:var(--src-baba-ink)}
+.badge-Geotech{background:var(--src-geotech-soft);color:var(--src-geotech-ink)}
+
+/* ================= FOOTER ================= */
+.footer{margin-top:80px;background:var(--surface-2);border-top:1px solid var(--border)}
+.footer-inner{max-width:1280px;margin:0 auto;padding:36px 32px;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:16px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);text-align:center}
+.footer a{color:var(--muted);text-decoration:none;transition:color 0.15s}
+.footer a:hover{color:var(--text)}
+
+@media print{
+  @page { size: 8.5in 11in; margin: 0.5in }
+
+  /* ===== Plain-text print mode (PRINT button) ===== */
+  body.plaintext-print > .shell{display:none}
+  body.plaintext-print #plaintext-output{display:block !important}
+  #plaintext-output{font-family:'Courier New',Courier,monospace;font-size:10pt;line-height:1.35;color:#000;background:#fff;white-space:pre-wrap;padding:0}
+
+  /* ===== Formatted print mode (Export PDF link) ===== */
+  body:not(.plaintext-print){background:#fff;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body:not(.plaintext-print) .topbar,
+  body:not(.plaintext-print) .filter-bar,
+  body:not(.plaintext-print) .footer,
+  body:not(.plaintext-print) .spec-acc > summary .chev,
+  body:not(.plaintext-print) .sec-progress,
+  body:not(.plaintext-print) .tb-actions,
+  body:not(.plaintext-print) #tsv-input { display:none !important }
+
+  body:not(.plaintext-print) table.findings tr.hidden-row{display:table-row !important}
+  body:not(.plaintext-print) details.spec-acc{display:block}
+  body:not(.plaintext-print) details.spec-acc > summary{display:flex}
+
+  body:not(.plaintext-print) .main{padding:0;max-width:none}
+  body:not(.plaintext-print) .main > section{margin-bottom:24px;break-inside:avoid}
+  body:not(.plaintext-print) .proj-header{padding-bottom:24px}
+  body:not(.plaintext-print) .proj-header h1{font-size:32px}
+
+  body:not(.plaintext-print) .print-bar{
+    display:block !important;
+    background:#e5e7eb;
+    color:#111827;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    padding:6px 12px;
+    margin:18px 0 14px;
+    border-left:4px solid var(--brand);
+    break-after:avoid;
+  }
+  body:not(.plaintext-print) .print-bar.print-bar-section{display:none !important}
+  body:not(.plaintext-print) .section-title{display:none}
+
+  body:not(.plaintext-print) .spec-acc{background:#fff;border:0;margin:18px 0 0;break-inside:auto;break-before:auto}
+  body:not(.plaintext-print) .spec-acc > summary{
+    list-style:none;
+    background:#e5e7eb;
+    color:#111827;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:6px 12px;
+    border-left:4px solid var(--brand);
+    break-after:avoid;
+  }
+  body:not(.plaintext-print) .spec-acc > summary .sum-count{color:#475569;font-weight:500;text-transform:none;letter-spacing:0}
+  body:not(.plaintext-print) .spec-acc .acc-body{display:block !important;padding:8px 0 0}
+
+  body:not(.plaintext-print) table.findings{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;font-size:10pt;color:#000;border:1px solid #cbd5e1}
+  body:not(.plaintext-print) table.findings th{background:#f3f4f6;color:#111827;font-weight:700;padding:6px 8px;border-bottom:1px solid #cbd5e1;text-transform:uppercase;font-size:9pt;letter-spacing:0.06em}
+  body:not(.plaintext-print) table.findings td{padding:6px 8px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:400;font-size:10pt}
+  body:not(.plaintext-print) table.findings tr{break-inside:avoid}
+  body:not(.plaintext-print) table.findings .badge{
+    display:inline !important;
+    background:transparent !important;
+    color:#111827 !important;
+    padding:0 !important;
+    font-size:10pt !important;
+    font-weight:400 !important;
+    text-transform:none !important;
+    letter-spacing:0 !important;
+  }
+
+  body:not(.plaintext-print) .corr-toggle{display:none !important}
+  body:not(.plaintext-print) .corr-print{
+    display:inline-block !important;
+    width:12px;height:12px;
+    border:1px solid #475569;
+    background:#fff;
+    position:relative;
+    vertical-align:-2px;
+  }
+  body:not(.plaintext-print) .corr-print.checked::after{
+    content:"";
+    position:absolute;
+    left:2px; top:-2px;
+    width:5px; height:9px;
+    border:solid #111827;
+    border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+
+  body:not(.plaintext-print) .bento{grid-template-columns:repeat(6,1fr);gap:6px}
+  body:not(.plaintext-print) .bento .tile{min-height:70px;padding:8px;border:1px solid #cbd5e1}
+  body:not(.plaintext-print) .bento .tile.primary{background:#fde8e9}
+  body:not(.plaintext-print) .bento .tile.primary .tlabel,
+  body:not(.plaintext-print) .bento .tile.primary .tval{color:var(--brand)}
+  body:not(.plaintext-print) .crit-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  body:not(.plaintext-print) .crit-card{border:1px solid #cbd5e1;padding:12px}
+  body:not(.plaintext-print) .chart-card{border:1px solid #cbd5e1;padding:16px}
+}
+
+/* Print-only elements hidden on screen */
+.print-bar{display:none}
+.corr-print{display:none}
+#plaintext-output{display:none}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="brand-dot"></span>
+    <span class="tb-title">Spec Coordination Report</span>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btn-import" type="button" title="Import TSV"><span class="material-symbols-outlined">upload</span>Import</button>
+      <button class="tb-btn" id="btn-save" type="button" title="Save as TSV"><span class="material-symbols-outlined">download</span>Save</button>
+      <button class="tb-btn" id="btn-print" type="button" title="Export formatted PDF"><span class="material-symbols-outlined">print</span>Print</button>
+      <input type="file" id="tsv-input" accept=".tsv,text/tab-separated-values,text/plain" hidden="">
+    </div>
+  </div>
+  <div class="tb-progress-bar" aria-label="Overall correction progress">
+    <div class="tb-progress-fill" id="overall-fill"></div>
+    <span class="tb-progress-count" id="overall-count">0% Corrected</span>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- PROJECT HEADER -->
+  <section class="proj-header">
+    <div>
+      <div class="eyebrow">Project {{PROJECT_NUMBER}}</div>
+      <h1>{{PROJECT_NAME}}</h1>
+      <div class="meta">
+        <span class="material-symbols-outlined">location_on</span>
+        <span>{{PROJECT_ADDRESS}}</span>
+      </div>
+      <div class="sub" style="font-size:13px;color:var(--muted);margin-top:8px">Reviewers: {{REVIEWERS}} · Sections: {{SECTIONS_LIST}}</div>
+    </div>
+    <div class="right">
+      <div class="eyebrow">Report Generated</div>
+      <div class="date">{{REPORT_DATE}}</div>
+    </div>
+  </section>
+
+  <!-- SUMMARY DASHBOARD -->
+  <section>
+    <div class="print-bar">Summary Dashboard</div>
+    <h2 class="section-title">Summary Dashboard</h2>
+    <div class="bento">
+      <div class="tile">
+        <div class="tlabel"><span>Total</span><span class="material-symbols-outlined">monitoring</span></div>
+        <div class="tval">{{TOTAL_FINDINGS}}</div>
+      </div>
+      <div class="tile primary">
+        <div class="tlabel"><span>Deviations</span></div>
+        <div class="tval">{{DEVIATION_COUNT}}</div>
+      </div>
+      <div class="tile">
+        <div class="tlabel"><span>Verify</span></div>
+        <div class="tval">{{VERIFY_COUNT}}</div>
+      </div>
+      <!-- Include one tile per source that has findings. Examples: -->
+      <div class="tile">
+        <div class="tlabel"><span>BABA</span></div>
+        <div class="tval">{{BABA_COUNT}}</div>
+      </div>
+      <div class="tile">
+        <div class="tlabel"><span>Geotech</span></div>
+        <div class="tval">{{GEOTECH_COUNT}}</div>
+      </div>
+      <div class="tile">
+        <div class="tlabel"><span>QAP</span></div>
+        <div class="tval">{{QAP_COUNT}}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHART — Pure CSS stacked bars, one row per spec section -->
+  <section>
+    <div class="print-bar">Findings by Spec Section</div>
+    <h2 class="section-title">Findings by Spec Section</h2>
+    <div class="chart-card">
+      <div class="chart-legend">
+        <div><span class="sw" style="background:var(--brand)"></span>Deviation</div>
+        <div><span class="sw" style="background:var(--verify)"></span>Verify</div>
+      </div>
+      <div class="chart-rows">
+        <!-- {{CHART_ROWS}}
+             Repeat this block for each spec section. Bar widths are percentages of the section with the most findings (max_count).
+             Example for one row:
+
+        <div class="chart-row">
+          <div class="row-head"><span>03 3000 — Cast-In-Place Concrete</span><span class="count">23 findings</span></div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:100%">
+              <div class="seg-dev" style="width:56.5%"></div>
+              <div class="seg-ver" style="width:43.5%"></div>
+            </div>
+          </div>
+        </div>
+
+             bar-fill width = (section_total / max_count * 100)%
+             seg-dev width  = (deviation_count / section_total * 100)%
+             seg-ver width  = (verify_count / section_total * 100)%
+        -->
+      </div>
+    </div>
+  </section>
+
+  <!-- CRITICAL ISSUES — Only include if there are critical findings -->
+  <section>
+    <div class="print-bar">Critical Issues</div>
+    <h2 class="section-title">Critical Issues</h2>
+    <div class="crit-grid">
+      <!-- {{CRITICAL_ISSUES}}
+           Repeat this block for each critical issue. Include specific paragraph references.
+           Example for one card:
+
+      <div class="crit-card">
+        <div class="icon"><span class="material-symbols-outlined">priority_high</span></div>
+        <div>
+          <h4>Issue Title</h4>
+          <p>Description with specific paragraph references (e.g., §2.01.D.5.a).</p>
+        </div>
+      </div>
+      -->
+    </div>
+  </section>
+
+  <!-- DETAILED FINDINGS -->
+  <section>
+    <div class="print-bar">Detailed Specification Findings</div>
+    <h2 class="section-title">Detailed Specification Findings</h2>
+
+    <!-- Filter bar — only include buttons for sources present in findings data -->
+    <div class="filter-bar">
+      <span class="flabel">Status</span>
+      <button class="filter-btn active dev" data-filter="status" data-val="DEVIATION">Deviation</button>
+      <button class="filter-btn active ver" data-filter="status" data-val="VERIFY">Verify</button>
+      <div class="filter-sep"></div>
+      <span class="flabel">Source</span>
+      <!-- Include only the source buttons that appear in this project's findings -->
+      <button class="filter-btn active src-internal" data-filter="source" data-val="Internal">Internal</button>
+      <button class="filter-btn active src-qap" data-filter="source" data-val="QAP">QAP</button>
+      <button class="filter-btn active src-baba" data-filter="source" data-val="BABA">BABA</button>
+      <button class="filter-btn active src-geotech" data-filter="source" data-val="Geotech">Geotech</button>
+    </div>
+
+    <!-- {{SECTION_FINDINGS}}
+         Repeat the following block for each spec section. The FIRST section gets the "open" attribute.
+         data-row-id values are sequential across all sections: f1, f2, f3, ...
+
+         Example for one section:
+    -->
+
+    <div class="print-bar print-bar-section">Section 03 3000 — Cast-In-Place Concrete</div>
+    <details class="spec-acc" open="" data-section="03 3000">
+      <summary>
+        <div class="sum-left"><span>03 3000 — Cast-In-Place Concrete</span><span class="sum-count">23 findings</span></div>
+        <div class="sec-progress" aria-label="Section 03 3000 corrected progress"><div class="sp-track"><div class="sp-fill"></div></div><span class="sp-count">0 / 0</span></div>
+        <span class="material-symbols-outlined chev">expand_more</span>
+      </summary>
+      <div class="acc-body">
+        <table class="findings">
+          <colgroup><col class="col-source"><col class="col-para"><col class="col-status"><col><col class="col-corrected"></colgroup>
+          <thead><tr><th>Source</th><th>Paragraph</th><th>Status</th><th>Finding</th><th>Corrected</th></tr></thead>
+          <tbody>
+            <!-- Example finding row: -->
+            <tr data-sources="Internal" data-statuses="DEVIATION" data-row-id="f1"><td><span class="badge badge-Internal">Internal</span></td><td>§1.03.K</td><td><span class="badge badge-DEVIATION">Deviation</span></td><td>Finding description text here</td><td><div class="corr-toggle" data-row="f1"><button type="button" data-val="Y">Yes</button><button type="button" data-val="N">No</button></div><span class="corr-print" data-row="f1"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <!-- End of example section. Remove the example above and replace with actual findings data. -->
+
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Disclaimer: Report generated with LLM and requires designer input</span>
+  </div>
+</footer>
+
+</div>
+
+<div id="plaintext-output"></div>
+
+<script>
+// ============ FILTER LOGIC ============
+const activeFilters = {
+  status: new Set(['DEVIATION','VERIFY']),
+  source: new Set(['Internal','QAP','BABA','Geotech'])
+};
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const type = btn.dataset.filter, val = btn.dataset.val;
+    if (activeFilters[type].has(val)) { activeFilters[type].delete(val); btn.classList.remove('active'); btn.classList.add('inactive'); }
+    else { activeFilters[type].add(val); btn.classList.remove('inactive'); btn.classList.add('active'); }
+    applyFilters();
+  });
+});
+function applyFilters() {
+  document.querySelectorAll('table.findings tbody tr').forEach(row => {
+    const rs = (row.dataset.sources||'').split(',').map(s=>s.trim());
+    const st = (row.dataset.statuses||'').split(',').map(s=>s.trim());
+    const smatch = rs.some(s => activeFilters.source.has(s));
+    const tmatch = st.some(s => activeFilters.status.has(s));
+    row.classList.toggle('hidden-row', !(smatch && tmatch));
+  });
+}
+
+// ============ CORRECTED STATE (Yes/No per row) ============
+const STORAGE_KEY = 'coord-report-{{PROJECT_NUMBER}}-corrected';
+const correctedState = {};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) Object.assign(correctedState, JSON.parse(raw));
+  } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(correctedState)); } catch(e) {}
+}
+function setCorrected(rowId, val) {
+  if (val === null) delete correctedState[rowId];
+  else correctedState[rowId] = val;
+  saveState();
+  renderToggle(rowId);
+  updateProgress();
+}
+function renderToggle(rowId) {
+  const toggle = document.querySelector('.corr-toggle[data-row="'+rowId+'"]');
+  const val = correctedState[rowId] || null;
+  if (toggle) {
+    toggle.querySelectorAll('button').forEach(b => {
+      b.classList.remove('on-yes','on-no');
+      if (val === 'Y' && b.dataset.val === 'Y') b.classList.add('on-yes');
+      if (val === 'N' && b.dataset.val === 'N') b.classList.add('on-no');
+    });
+  }
+  const box = document.querySelector('.corr-print[data-row="'+rowId+'"]');
+  if (box) box.classList.toggle('checked', val === 'Y');
+}
+function renderAllToggles() {
+  document.querySelectorAll('.corr-toggle').forEach(t => renderToggle(t.dataset.row));
+}
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.corr-toggle button');
+  if (!btn) return;
+  const toggle = btn.closest('.corr-toggle');
+  const rowId = toggle.dataset.row;
+  const val = btn.dataset.val;
+  const cur = correctedState[rowId] || null;
+  setCorrected(rowId, cur === val ? null : val);
+});
+
+// ============ PROGRESS BARS ============
+function updateProgress() {
+  let overallTotal = 0, overallYes = 0;
+  document.querySelectorAll('details.spec-acc').forEach(det => {
+    const rows = det.querySelectorAll('tbody tr');
+    let total = rows.length, yes = 0;
+    rows.forEach(r => { if (correctedState[r.dataset.rowId] === 'Y') yes++; });
+    overallTotal += total; overallYes += yes;
+    const fill = det.querySelector('.sp-fill');
+    const count = det.querySelector('.sp-count');
+    if (fill) fill.style.width = total ? (yes/total*100)+'%' : '0%';
+    if (count) count.textContent = yes + ' / ' + total;
+  });
+  const oFill = document.getElementById('overall-fill');
+  const oCount = document.getElementById('overall-count');
+  const pct = overallTotal ? Math.round(overallYes/overallTotal*100) : 0;
+  if (oFill) oFill.style.width = pct+'%';
+  if (oCount) oCount.textContent = pct + '% Corrected';
+}
+
+// ============ TSV SAVE / IMPORT ============
+function collectRows() {
+  const data = [];
+  document.querySelectorAll('details.spec-acc').forEach(det => {
+    const section = det.dataset.section || '';
+    det.querySelectorAll('tbody tr').forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      const source = (cells[0]?.textContent || '').trim();
+      const paragraph = (cells[1]?.textContent || '').trim();
+      const status = (cells[2]?.textContent || '').trim();
+      const finding = (cells[3]?.textContent || '').trim();
+      const rowId = tr.dataset.rowId;
+      const corrected = correctedState[rowId] === 'Y' ? 'Yes' : correctedState[rowId] === 'N' ? 'No' : '';
+      data.push({ rowId, section, source, paragraph, status, finding, corrected });
+    });
+  });
+  return data;
+}
+function tsvEscape(s) { return String(s).replace(/\t/g,' ').replace(/\r?\n/g,' '); }
+function saveTSV() {
+  const rows = collectRows();
+  const header = ['RowID','Section','Source','Paragraph','Status','Finding','Corrected'];
+  const lines = [header.join('\t')];
+  rows.forEach(r => lines.push([r.rowId, r.section, r.source, r.paragraph, r.status, r.finding, r.corrected].map(tsvEscape).join('\t')));
+  const blob = new Blob([lines.join('\n')], {type:'text/tab-separated-values'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'coordination-report-{{PROJECT_NUMBER}}.tsv';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+}
+function importTSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.length);
+  if (!lines.length) return;
+  const header = lines[0].split('\t').map(s => s.trim().toLowerCase());
+  const rowIdIdx = header.indexOf('rowid');
+  const corrIdx = header.indexOf('corrected');
+  const paraIdx = header.indexOf('paragraph');
+  const findIdx = header.indexOf('finding');
+  if (corrIdx < 0) { alert('TSV must include a "Corrected" column.'); return; }
+  const allRows = Array.from(document.querySelectorAll('tbody tr[data-row-id]'));
+  let matched = 0;
+  for (let i=1;i<lines.length;i++) {
+    const cells = lines[i].split('\t');
+    const raw = (cells[corrIdx]||'').trim().toLowerCase();
+    const val = raw === 'yes' || raw === 'y' ? 'Y' : raw === 'no' || raw === 'n' ? 'N' : null;
+    let target = null;
+    if (rowIdIdx >= 0 && cells[rowIdIdx]) {
+      target = allRows.find(r => r.dataset.rowId === cells[rowIdIdx].trim());
+    }
+    if (!target && paraIdx >= 0 && findIdx >= 0) {
+      const p = (cells[paraIdx]||'').trim(), f = (cells[findIdx]||'').trim();
+      target = allRows.find(r => {
+        const tc = r.querySelectorAll('td');
+        return (tc[1]?.textContent||'').trim() === p && (tc[3]?.textContent||'').trim() === f;
+      });
+    }
+    if (target) {
+      if (val === null) delete correctedState[target.dataset.rowId];
+      else correctedState[target.dataset.rowId] = val;
+      matched++;
+    }
+  }
+  saveState();
+  renderAllToggles();
+  updateProgress();
+  alert('Imported ' + matched + ' row update(s).');
+}
+
+// ============ PLAIN TEXT PRINT (8.5x11) ============
+function buildPlainText() {
+  const rows = collectRows();
+  const pad = (s, n) => { s = String(s||''); return s.length >= n ? s.slice(0,n) : s + ' '.repeat(n-s.length); };
+  const wrap = (s, w) => {
+    const out = []; let line = ''; const words = String(s||'').split(/\s+/);
+    for (const word of words) {
+      if ((line + ' ' + word).trim().length > w) { out.push(line.trim()); line = word; }
+      else { line = (line + ' ' + word).trim(); }
+    }
+    if (line) out.push(line);
+    return out;
+  };
+
+  const lines = [];
+  const h1 = document.querySelector('.proj-header h1');
+  const eyebrow = document.querySelector('.proj-header .eyebrow');
+  const meta = document.querySelector('.proj-header .meta span:last-child');
+  const date = document.querySelector('.proj-header .right .date');
+  const sub = document.querySelector('.proj-header .sub');
+  lines.push('SPEC COORDINATION REPORT');
+  lines.push((eyebrow?.textContent||'').trim() + ' — ' + (h1?.textContent||'').trim());
+  lines.push((meta?.textContent||'').trim());
+  lines.push('Report Generated: ' + (date?.textContent||'').trim());
+  lines.push((sub?.textContent||'').replace('·','/').trim());
+  lines.push('');
+
+  const overall = rows.length;
+  const overallYes = rows.filter(r => r.corrected === 'Yes').length;
+  lines.push('OVERALL CORRECTED: ' + overallYes + ' / ' + overall);
+  lines.push(''.padEnd(78, '='));
+  lines.push('');
+
+  const bySection = {};
+  rows.forEach(r => { (bySection[r.section] = bySection[r.section] || []).push(r); });
+
+  Object.keys(bySection).forEach(sec => {
+    const group = bySection[sec];
+    const yes = group.filter(r => r.corrected === 'Yes').length;
+    lines.push('SECTION ' + sec + '   (Corrected: ' + yes + ' / ' + group.length + ')');
+    lines.push(''.padEnd(78, '-'));
+    lines.push(pad('Source',10) + pad('Paragraph',22) + pad('Status',12) + pad('Corr',5) + 'Finding');
+    lines.push(''.padEnd(78, '-'));
+    group.forEach(r => {
+      const findingLines = wrap(r.finding, 78 - (10+22+12+5));
+      const prefix = pad(r.source,10) + pad(r.paragraph,22) + pad(r.status,12) + pad(r.corrected || '-',5);
+      lines.push(prefix + (findingLines[0] || ''));
+      for (let i=1;i<findingLines.length;i++) lines.push(' '.repeat(10+22+12+5) + findingLines[i]);
+    });
+    lines.push('');
+  });
+
+  lines.push('');
+  lines.push('— End of Report —');
+  return lines.join('\n');
+}
+
+function printFormatted() {
+  const accs = document.querySelectorAll('details.spec-acc');
+  const previouslyOpen = new Map();
+  accs.forEach(d => {
+    previouslyOpen.set(d, d.open);
+    d.open = true;
+  });
+  const restore = () => {
+    accs.forEach(d => { d.open = previouslyOpen.get(d); });
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+  window.print();
+}
+
+// ============ TOPBAR WIRING ============
+document.getElementById('btn-print').addEventListener('click', printFormatted);
+document.getElementById('btn-save').addEventListener('click', saveTSV);
+document.getElementById('btn-import').addEventListener('click', () => document.getElementById('tsv-input').click());
+document.getElementById('tsv-input').addEventListener('change', (e) => {
+  const file = e.target.files?.[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { importTSV(reader.result); e.target.value = ''; };
+  reader.readAsText(file);
+});
+
+// ============ INIT ============
+loadState();
+renderAllToggles();
+updateProgress();
+</script>
+
+
+</body></html>
