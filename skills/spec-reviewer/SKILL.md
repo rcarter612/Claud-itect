@@ -325,7 +325,7 @@ If no programs can be identified, return cleanly with a note listing the files f
 
 For each program identified, apply program-specific checks against the sections in scope per the mapping table. The agent must know enough about each common program to identify its mandatory provisions and rating-path provisions:
 
-- **NGBS (ICC 700):** Lot design (Ch. 5), resource efficiency (Ch. 6), energy efficiency (Ch. 7), water efficiency (Ch. 8), IEQ (Ch. 9), O&M (Ch. 10). Identify the pursued level (Bronze/Silver/Gold/Emerald) from project documents if declared; otherwise flag VERIFY and check mandatory provisions only.
+- **NGBS (ICC 700):** See detailed NGBS Review Procedure below.
 - **Enterprise Green Communities:** Integrative Design, Location + Neighborhood Fabric, Site Improvements, Water, Energy, Materials, Healthy Living Environment, Operations + Maintenance. Check mandatory criteria first; check optional criteria only if project documents declare a point target.
 - **Green Built Homes:** Check the checklist line-items against corresponding spec provisions (envelope, HVAC, appliances, water, materials, waste).
 - **Other programs:** Apply the same pattern — identify mandatory vs. optional, check mandatory by default, check optional only when pursuit is declared.
@@ -357,6 +357,129 @@ Example finding:
   ]
 }
 ```
+
+#### NGBS Review Procedure
+
+**Detection:** When the inventory scan finds an `NGBS 2020/` subfolder in `H. Other/`, classify as NGBS. Look for `ngbs-project-config.md` inside the subfolder as the primary configuration source. If the config file is absent, proceed with Scenario C (mandatory-only).
+
+**Config loading:** Read `ngbs-project-config.md` to determine target level, building type, compliance path, scorecard availability, and any listed practice selections.
+
+**Scenario A — Scorecard provided** (`Scorecard Provided: Yes` in config):
+
+Read the scorecard file identified in the config. Extract the list of selected practices and target level. For each selected practice that maps to a CSI spec section (per the mapping table below), check the corresponding spec. Produce findings with status:
+- DEVIATION — spec contradicts the practice requirement
+- VERIFY — spec is silent on the practice
+- COMPLIANT — spec addresses it
+
+**Scenario B — Level declared, no scorecard** (`Target Level` is set, no scorecard, no practices listed):
+
+1. Check all mandatory practices from Chapters 5–10 against the spec using the mapping table.
+2. Check the spec-relevant optional practices list (below), filtered to the declared level tier. For optional practices, use VERIFY only (not DEVIATION): *"This practice is commonly pursued for [Level] certification. Verify whether the project is pursuing it and whether the spec addresses it."*
+
+**Scenario C — No level declared / config absent** (`Target Level: Unknown`, or config file missing):
+
+Check mandatory practices only. Flag each as VERIFY: *"NGBS level not declared. If project pursues NGBS, verify this mandatory practice is addressed."*
+
+**Scorecard parsing fallback:** If the scorecard cannot be reliably parsed, fall back to Scenario B using the level from the config file (or Scenario C if no level). Add a VERIFY note: *"Scorecard found but could not be parsed. Falling back to level-based review."*
+
+**Climate zone:** Many Chapter 7 practices have climate-zone-dependent values. Read the climate zone from the config file. If blank, check `3.0 References/D. Energy/` for energy documents that declare it. If still unknown, flag every climate-zone-dependent finding as VERIFY with a note requesting the designer confirm the climate zone.
+
+**OCR tolerance:** The NGBS TXT files are OCR extractions with occasional artifacts (broken table lines, merged words). Use practice numbers (e.g., "701.4.3.1") as the primary identifier, not exact text matching.
+
+**Findings format:** Tag each finding's `requirement_source` with mandatory/optional and applicable level:
+- `"NGBS §701.4.3.1 (Mandatory)"`
+- `"NGBS §901.9 (Optional — Silver+)"`
+- `"NGBS §802.5.4(1) (Mandatory — Gold/Emerald only)"`
+
+**NGBS-to-CSI Mapping Table**
+
+| NGBS Practice | Description | CSI Section(s) | What to Check in Spec |
+|---|---|---|---|
+| 601.1(6) | Conditioned floor area > 4,000 sf (M) | 01 xx xx | Unit size triggers additional Category 7 points |
+| 601.2 | Material usage / structural optimization | 03 30 00, 05 12 00, 06 10 00 | Advanced framing, optimized structural member sizing |
+| 601.5 | Prefabricated components | 06 12 00, 06 16 00 | Precut/preassembled/panelized systems |
+| 602.1 series | Exterior moisture management | 07 10 00, 07 25 00, 07 27 00, 07 62 00 | Flashing, WRB, drainage plane, sealants at penetrations |
+| 602.1.9 | Termite barrier | 31 31 00 | Termite treatment, physical barriers |
+| 606.1 | Recycled content materials | Multiple | Recycled content percentages in product specs |
+| 701.4.1.1 (M) | HVAC system sizing | 23 xx xx | Manual J/S reference, sizing documentation |
+| 701.4.1.2 (M) | Radiant/hydronic space heating design | 23 21 00, 23 83 00 | Design per ACCA Manual J, AHRI I=B=R |
+| 701.4.2.1 (M) | Duct air sealing | 23 31 00 | UL 181A/181B sealant, mastic specification |
+| 701.4.2.2 (M) | No framing cavities as ducts/plenums | 23 31 00 | Duct materials — no building cavities |
+| 701.4.2.3 (M) | Duct system sizing | 23 31 00 | Manual D reference |
+| 701.4.3.1 (M) | Building thermal envelope air sealing | 07 27 00, 07 92 00 | Air barrier spec, sealant at all joints/penetrations per (a)–(m) list |
+| 701.4.3.2 (M) | Air barrier, insulation, envelope testing | 07 21 00, 07 27 00 | Grade I insulation, blower door test per ASTM E779, Table 701.4.3.2(2) checklist |
+| 701.4.4 (M) | Fenestration U-factor and SHGC | 08 50 00, 08 51 00 | U-factor, SHGC per climate zone |
+| 701.4.5 (M) | Recessed luminaires in thermal envelope | 26 51 00 | IC-rated, air-tight fixtures |
+| 701.4.6 (M) | Duct insulation | 23 07 00 | Supply/return duct insulation R-values |
+| 701.4.7 (M) | HVAC equipment efficiency | 23 81 00, 23 34 00 | SEER, HSPF/HSPF2, AFUE minimums |
+| 703.2 | Prescriptive envelope values | 07 21 00, 08 50 00 | R-values and U-factors by climate zone (Prescriptive Path) |
+| 705.1–705.6 | Additional energy efficiency practices | 23 xx xx, 26 xx xx | High-efficiency equipment, lighting, pipe insulation, renewables |
+| 706.1–706.5 | Renewable energy | 26 31 00, 23 56 00 | Solar PV, solar thermal, wind, other on-site generation |
+| 802.1 | Hot water distribution | 22 10 00 | Max volume to fixture, pipe insulation, demand-controlled pumps |
+| 802.4 | Fixture flow rates | 22 40 00 | GPM for lavatory faucets, showerheads; GPF for water closets |
+| 802.5.4(1) (M at Gold+) | Water closets and urinals | 22 40 00 | WaterSense-labeled fixtures (mandatory at Gold/Emerald) |
+| 802.6.1 (M) | Irrigation system by qualified professional | 32 80 00 | Irrigation plan and professional execution |
+| 901.1.4 (M) | Gas-fired fireplace venting | 23 52 00 | Vented to outdoors, listed per NFPA 54 / IFGC |
+| 901.2.1 (M) | Solid fuel-burning appliance compliance | 23 52 00 | Code-compliant fireplaces/stoves per UL 127, UL 1482, EPA |
+| 901.3(1)(a) (M) | Garage door sealing | 08 14 00, 08 71 00 | Gasketed doors in common wall between garage and conditioned space |
+| 901.3(1)(b) (M) | Garage air barrier | 07 27 00, 07 84 00 | Continuous air barrier separating garage from conditioned space |
+| 901.3(1)(c) | Garage exhaust fan | 23 34 00 | 100 cfm ducted / 70 cfm unducted, continuous or motion-activated |
+| 901.4(1) (M) | Structural plywood/OSB adhesive exposure | 06 10 00, 06 16 00 | DOC PS 1/PS 2 compliance, Exposure 1 or Exterior adhesive rating |
+| 901.4(2)–(6) | Wood products formaldehyde/emissions | 06 20 00, 12 35 00 | CPA A208.1/A208.2, HPVA HP-1, CPA 4, CARB compliance per product group |
+| 901.5 | Cabinets — formaldehyde | 12 35 00 | Solid wood/non-emitting materials or CARB-compliant composite wood |
+| 901.6 (M) | Carpet restrictions | 09 68 00 | No wall-to-wall carpet adjacent to water closets and bathing fixtures |
+| 901.7 | Hard-surface flooring emissions | 09 60 00, 09 65 00 | CDPH/EHLB v1.1 emission levels, third-party certified (Appendix B programs) |
+| 901.8 | Wall covering emissions | 09 72 00 | CDPH/EHLB v1.1, min 85% of wall coverings |
+| 901.9 | Interior architectural coatings VOC | 09 91 00, 09 93 00 | Zero VOC (EPA Method 24), GreenSeal GS-11, or CARB SCM per Table 901.9.1 |
+| 901.10 | Interior adhesives/sealants VOC | 07 92 00, 09 29 00 | CDPH/EHLB v1.1, GreenSeal GS-36, or SCAQMD Rule 1168 per Table 901.10(3) |
+| 901.11 | Insulation emissions | 07 21 00 | 85% of insulation per CDPH/EHLB v1.1, third-party certified |
+| 901.13 (M) | Carbon monoxide alarms | 28 31 00 | CO alarms per IRC R315 |
+| 902.1.1(1) (M) | Bathroom exhaust to outdoors | 23 34 00 | 50 cfm intermittent / 20 cfm continuous, ducted to outdoors |
+| 902.1.1(2) (M) | Clothes dryer exhaust to outdoors | 23 33 00 | Dryer vented to outdoors (except listed condensing ductless) |
+| 902.1.1(3) | Kitchen range hood ducted to outdoors | 23 33 00 | 100 cfm intermittent / 25 cfm continuous |
+| 902.2.1 (M*) | Whole-building ventilation (ASHRAE 62.2) | 23 70 00, 23 37 00 | Mandatory where ACH50 < 5.0; exhaust/supply/balanced/HRV/ERV |
+| 902.2.3–902.2.4 | MERV filtration | 23 40 00 | MERV 8–13 or MERV 14+, HVAC accommodates pressure drop |
+| 902.3 (M in Zone 1) | Radon reduction | 31 32 00 | Passive radon system per IRC Appendix F or §902.3.1; sub-slab collection, vent pipe, soil-gas retarder |
+
+**Spec-Relevant Optional Practices (for Scenario B)**
+
+When only a level is declared (no scorecard or practice list), check these optional practices in addition to all mandatory ones. Use VERIFY status only.
+
+*Silver and above:*
+- 602.1 series — Enhanced moisture management beyond code (07 xx 00)
+- 606.1 — Recycled content materials (multiple divisions)
+- 703.2 — Prescriptive envelope enhancements (07 21 00, 08 50 00)
+- 802.1 — Hot water distribution efficiency (22 10 00)
+- 802.4 — Low-flow fixtures beyond code minimums (22 40 00)
+- 901.4(2)–(6) — Formaldehyde-free/low-emission wood products (06 20 00, 12 35 00)
+- 901.7 — Hard-surface flooring VOC (09 60 00, 09 65 00)
+- 901.9 — Low-VOC architectural coatings (09 91 00, 09 93 00)
+- 901.10 — Low-VOC adhesives and sealants (07 92 00, 09 29 00)
+- 902.1.1(3) — Kitchen range hood to outdoors (23 33 00)
+- 902.1.2 — Exhaust fan timers/humidistats (23 34 00)
+
+*Gold and above (in addition to Silver list):*
+- 601.5 — Prefabricated components (06 12 00, 06 16 00)
+- 705.1–705.6 — High-efficiency HVAC, water heating, lighting, pipe insulation (23 xx xx, 26 xx xx)
+- 706.1–706.5 — Renewable energy systems (26 31 00, 23 56 00)
+- 901.5 — Low-formaldehyde cabinets (12 35 00)
+- 901.11 — Low-emission insulation (07 21 00)
+- 902.2.1 — Whole-building ventilation where not already mandatory (23 70 00)
+- 902.2.3/902.2.4 — MERV filtration (23 40 00)
+
+**Point Thresholds (Table 303) — for reference during review:**
+
+| Category | Chapter | Bronze | Silver | Gold | Emerald |
+|---|---|---|---|---|---|
+| 1 — Lot Design | Ch. 5 | 50 | 64 | 93 | 121 |
+| 2 — Resource Efficiency | Ch. 6 | 43 | 59 | 89 | 119 |
+| 3 — Energy Efficiency | Ch. 7 | 30 | 45 | 60 | 70 |
+| 4 — Water Efficiency | Ch. 8 | 25 | 39 | 67 | 92 |
+| 5 — Indoor Environmental Quality | Ch. 9 | 25 | 42 | 69 | 97 |
+| 6 — Operation, Maintenance, Education | Ch. 10 | 8 | 10 | 11 | 12 |
+| 7 — Additional Points (any category) | Any | 50 | 75 | 100 | 100 |
+
+The lowest category level achieved determines the overall building rating.
 
 ### Building Code Agent (Future — not yet implemented)
 
