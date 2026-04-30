@@ -924,7 +924,12 @@ Replace the HTML comment blocks (`{{CHART_ROWS}}`, `{{CRITICAL_ISSUES}}`, `{{SEC
 
 **Chart rows** — One `div.chart-row` per spec section. `bar-fill` width = `(section_total / max_section_total * 100)%`. `seg-dev` width = `(deviation_count / section_total * 100)%`. `seg-ver` width = `(verify_count / section_total * 100)%`.
 
-**Critical issues** — One `div.crit-card` per critical finding. Must include specific paragraph references (e.g., "§2.01.D.5.a and §2.01.D.5.b"), not vague section-level descriptions.
+**Critical issues** — One `div.crit-card` per critical finding.
+
+- The card `<h4>` title must be ≤ 110 characters and end as a complete phrase. Never truncate mid-word.
+- The card `<p>` description must be a complete, self-contained summary (≤ 320 characters, 2–3 sentences max). Write a clean summary — never paste a fragment of the underlying finding text. If the underlying finding is longer, paraphrase. Every sentence must end with terminal punctuation; never emit text that ends mid-word like "This typographical err".
+- Must include specific numbered paragraph references (e.g., `§2.01.D.5.a`), not vague section-level descriptions.
+- Description must outline the issue in declarative terms. Do NOT include directive language ("Designer should…", "Should be…", "Renumber…", "Update to…"). The only acceptable instruction verb is "verify". For everything else, state the condition and let the designer decide the action.
 
 **Section findings** — One `<details class="spec-acc">` per spec section. The first section gets the `open` attribute; the rest are collapsed. Each finding is a `<tr>` with:
 - `data-sources` attribute: source name (e.g., `"Internal"`, `"QAP"`)
@@ -1088,7 +1093,7 @@ The agent should specifically check for these frequent gaps:
 ## Rules
 
 1. **Never modify original files.** All edits go to copies in `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/specs/`.
-2. **Cite specific paragraph numbers** (e.g., §2.04.D.1) for every finding.
+2. **Cite specific numbered paragraph references** (e.g., `§1.03`, `§2.04.D.1`, `§3.01.B.2.a`) for every finding. Use the CSI numeric paragraph hierarchy as it appears in the spec — `Article.Subparagraph.Item.SubItem`. Never substitute descriptive labels (do NOT emit `§General`, `§Part 1 - General`, `§REFERENCE STANDARDS`, `§Part 2 - Manufacturers`, etc.). When a finding applies to a heading rather than a numbered paragraph, walk the document to find the lowest-numbered paragraph under that heading (typically `§1.01`, `§2.01`, etc.) and use it. If a finding genuinely spans an entire article with no narrower target, use the article number alone (e.g., `§1.03`). Only use `§N/A` when the finding has no paragraph anchor at all (e.g., document-level metadata) — and never as a fallback for "I couldn't find the number."
 3. **Cite specific requirement references** (e.g., QAP §14.5.B.2) for every requirement-based finding.
 4. **Never speculate about designer intent.** If uncertain, use VERIFY.
 5. **Never soften findings.** Flag everything the agents identify.
@@ -1097,6 +1102,8 @@ The agent should specifically check for these frequent gaps:
 8. **Full context in every comment.** The designer must be able to accept or reject a change without re-doing the research.
 9. **Reference file is authoritative for standard editions.** Match and update citations to the reference file. Do not perform web lookups for standard currency.
 10. **Warn and skip missing requirements.** If a reviewer is selected but its requirement document is missing, warn the user and skip that reviewer. Do not error.
+11. **Outline issues, do not prescribe actions.** Findings text — both the HTML report `Finding` cells and the critical-issue descriptions — must describe what is wrong (the condition, the conflict, the value mismatch). Do not direct the designer to a course of action ("Designer should renumber…", "Update to…", "Should be standardized…"). The only acceptable instruction verb is **"verify"**, used when the designer must confirm a fact the agent could not resolve. Resolution belongs to the designer; the agent's job is to surface the issue. (Word comments inside the .docx may still include `Designer action:` lines for VERIFY items, since those comments are explicitly the audit trail. The HTML report is a status surface and stays declarative.)
+12. **Never truncate text in any output.** The HTML report's critical-issue cards, finding cells, and section titles must be complete. If the underlying finding is too long, summarize — never emit a string that ends mid-word or mid-sentence.
 11. **Placeholder and empty-folder reviewers return cleanly.** The Building Code Agent returns "not yet implemented" without failing the review. The Additional Requirements Agent warns and skips when `3.0 References/H. Other/` is empty or contains no identifiable program documents.
 12. **Conditional requirements use site context.** Look up the project address and use web search for site conditions (arterial roads, flood zones, noise zones) when requirements are location-dependent. If conditions cannot be determined, use VERIFY.
 13. **Produce all four outputs every time:** marked-up .docx copies, coordination-report.md, coordination-report.html, and SpecLink re-entry guide. The HTML report is populated from the template at `~/.claude/skills/spec-reviewer/templates/coordination-report-template.html` using the same findings data as the markdown report. Exclude COMPLIANT findings from the HTML report.
