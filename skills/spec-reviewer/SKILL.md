@@ -60,10 +60,9 @@ C:\Users\rcarter\OneDrive - ASK Studio\[Project Number] - [Project Name]\
         │   └── [YYYY-MM-DD]_Review/
         │       ├── coordination-report.md
         │       ├── coordination-report.html
-        │       ├── speclink-reentry-guide.md
         │       ├── review-log.csv
         │       ├── findings/      ← Agent findings JSONs (intermediate)
-        │       └── specs/         ← Modified .docx copies with tracked changes
+        │       └── specs/         ← Modified .docx copies with tracked changes (only if user opts in)
         └── A2. Submittal Reviews/ ← Outputs from the submittal-review skill (not this skill)
 ```
 
@@ -90,9 +89,12 @@ Which reviewers should I run for this project?
   [ ] Building Code (not yet implemented — placeholder)
 
 Which sections should I review? (default: all sections in 2.0 Specs/)
+
+Generate marked-up .docx copies with tracked changes? [y/N]
+(If no, only the coordination report and review log will be produced.)
 ```
 
-Accept the user's selections. If a reviewer is selected but its corresponding folder in `3.0 References/` is empty or missing, warn the user and skip that reviewer. Do not error.
+Accept the user's selections. Record the .docx-output choice as `generate_docx` (boolean) — Phase 5 Step 1 is skipped entirely when false. If a reviewer is selected but its corresponding folder in `3.0 References/` is empty or missing, warn the user and skip that reviewer. Do not error.
 
 ### Step 2 — Section-to-Reviewer Mapping
 
@@ -747,6 +749,8 @@ Runs after Phase 4 produces the change manifest.
 
 ### Step 1 — Apply Changes to .docx Copies
 
+Skip this step entirely if the user set `generate_docx = false` during Phase 0 Step 1. The coordination report (markdown + HTML) and review log are still produced from the change manifest in that case.
+
 Uses `python-docx` (with `lxml` XML manipulation for tracked revisions). No COM automation or running instance of Microsoft Word is required.
 
 For each section in the change manifest:
@@ -945,38 +949,7 @@ Exclude COMPLIANT findings from the HTML report entirely. The report exists to s
 
 ---
 
-### Step 5 — Generate SpecLink Re-Entry Guide
-
-Save as `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/speclink-reentry-guide.md`. This document is organized for efficient manual re-entry into BSD SpecLink Cloud:
-
-```markdown
-# SpecLink Re-Entry Guide
-
-**Project:** [Project name]
-**Date:** [YYYY-MM-DD]
-
-Instructions: After accepting/rejecting changes in Word, use this guide
-to re-enter accepted changes into SpecLink Cloud. Organized by section
-and paragraph for sequential editing.
-
----
-
-## Section [XX XX XX] — [Title]
-
-### §1.03.C — Reference Standards
-- **Change:** ASTM C920; 2018 → 2024
-- **SpecLink action:** Update standard year in reference list
-
-### §1.07.B — Warranty
-- **Change:** "2-year" → "5-year"
-- **SpecLink action:** Edit warranty duration. If this is a SpecLink choice field, select the 5-year option.
-
----
-
-[Repeat for each section with changes]
-```
-
-### Step 6 — Update Review Log
+### Step 4 — Update Review Log
 
 Append a row to `9.0 Output/A. Reviews/A1. Spec Reviews/[YYYY-MM-DD]_Review/review-log.csv` for each section reviewed:
 
@@ -1106,6 +1079,6 @@ The agent should specifically check for these frequent gaps:
 12. **Never truncate text in any output.** The HTML report's critical-issue cards, finding cells, and section titles must be complete. If the underlying finding is too long, summarize — never emit a string that ends mid-word or mid-sentence.
 11. **Placeholder and empty-folder reviewers return cleanly.** The Building Code Agent returns "not yet implemented" without failing the review. The Additional Requirements Agent warns and skips when `3.0 References/H. Other/` is empty or contains no identifiable program documents.
 12. **Conditional requirements use site context.** Look up the project address and use web search for site conditions (arterial roads, flood zones, noise zones) when requirements are location-dependent. If conditions cannot be determined, use VERIFY.
-13. **Produce all four outputs every time:** marked-up .docx copies, coordination-report.md, coordination-report.html, and SpecLink re-entry guide. The HTML report is populated from the template at `~/.claude/skills/spec-reviewer/templates/coordination-report-template.html` using the same findings data as the markdown report. Exclude COMPLIANT findings from the HTML report.
+13. **Always produce coordination-report.md and coordination-report.html.** Marked-up .docx copies are produced only when the user opts in during Phase 0 Step 1 (`generate_docx = true`). The HTML report is populated from the template at `~/.claude/skills/spec-reviewer/templates/coordination-report-template.html` using the same findings data as the markdown report. Exclude COMPLIANT findings from the HTML report.
 14. **Token efficiency.** Requirement agents produce lightweight JSON findings — they do not edit documents. The Coordination Agent sees only findings JSONs, not full documents. The Document Agent sees only the change manifest, not requirement documents.
 15. **Scale to project size.** For small projects (under 20 sections), 3–5 Internal Consistency Agents. For large projects (50+ sections), scale to 15–20 agents, each handling 3–5 sections. The orchestrator manages fan-out based on section count and page length.
